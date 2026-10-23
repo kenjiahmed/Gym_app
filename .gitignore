@@ -1,0 +1,28 @@
+﻿node_modules/
+.next/
+.env
+.env.*
+!.env.example
+
+# LaTeX build files
+*.aux
+*.lof
+*.log
+*.lot
+*.out
+*.synctex.gz
+*.toc
+
+# Temporary files
+ref-build*.log
+ref-check.txt
+
+# Environment files in all folders
+.env
+.env.*
+!.env.example
+
+# Environment files in all folders
+.env
+.env.*
+!.env.example

@@ -1,0 +1,33 @@
+@startuml
+!pragma layout smetana
+title Suivi des programmes et progression
+left to right direction
+skinparam shadowing false
+skinparam dpi 180
+skinparam classAttributeIconSize 0
+
+class User {
+  id: String
+  email: String
+}
+class UserPerformanceLog {
+  weightUsed: Float?
+  repsCompleted: Int
+  setsCompleted: Int
+  rpe: Int?
+  completedAt: DateTime
+}
+class Exercise {
+  id: String
+  name: String
+}
+class AdaptationLog {
+  adjustmentType: String
+  reason: String
+  createdAt: DateTime
+}
+
+User "1" -- "0..*" UserPerformanceLog
+Exercise "1" -- "0..*" UserPerformanceLog
+User "1" -- "0..*" AdaptationLog
+@enduml

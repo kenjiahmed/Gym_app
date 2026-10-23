@@ -1,0 +1,57 @@
+@startuml
+!pragma layout smetana
+title Diagramme de cas d'utilisation - fonctions et limites observ?es
+left to right direction
+skinparam shadowing false
+skinparam dpi 180
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #F8FAFC
+  BorderColor #334155
+  ArrowColor #475569
+}
+
+actor Visiteur as V
+actor "Utilisateur authentifi?" as U
+actor "Administrateur (role non controle)" as A
+
+rectangle "Application Fitness" {
+  usecase "Cr?er un compte" as UC1
+  usecase "Se connecter" as UC2
+  usecase "Consulter exercices et programmes" as UC3
+  usecase "Consulter les produits" as UC4
+  usecase "G?rer ses plans d'entra?nement" as UC5
+  usecase "G?rer ses s?ances" as UC6
+  usecase "Suivre un programme" as UC7
+  usecase "Consulter statistiques et enregistrer une performance" as UC8
+  usecase "Obtenir une analyse adaptative" as UC9
+  usecase "G?rer son panier" as UC10
+  usecase "Cr?er ou modifier des contenus" as UC11
+  usecase "Pr?parer un paiement de commande\n(service non expos? par une route)" as UC12
+}
+
+cloud "Stripe\n(service externe de paiement)" as Stripe
+V --> UC1
+V --> UC2
+V --> UC3
+V --> UC4
+U --> UC3
+U --> UC4
+U --> UC5
+U --> UC6
+U --> UC7
+U --> UC8
+U --> UC9
+U --> UC10
+A --> UC11
+U --> UC12
+Stripe ..> UC12 : traitement du paiement
+
+legend bottom
+L'analyse adaptative applique des r?gles d?terministes aux journaux de performance.
+Les routes d'ecriture de contenus ne v?rifient pas le role administrateur.
+Stripe est un syst?me externe, pas un acteur humain; le service de paiement existe
+mais les commandes ne sont pas expos?es par l'API. Le profil, le calendrier persistant
+et la facturation d'abonnement ne sont pas exposes par l'API observee.
+endlegend
+@enduml

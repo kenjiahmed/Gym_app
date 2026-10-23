@@ -1,0 +1,405 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("user") // "user" or "admin"
+  avatar    String?
+  height    Float?   // in cm
+  weight    Float?   // in kg
+  fitnessGoal String? // "weight_loss", "muscle_gain", "maintenance", "endurance"
+  stripeCustomerId String? @unique
+  subscriptionPlan String @default("free") // "free", "pro", "elite"
+  subscriptionStatus String @default("active") // "active", "canceled", "past_due"
+  subscriptionEndDate DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workoutPlans    WorkoutPlan[]
+  workoutSessions WorkoutSession[]
+  scheduledWorkouts ScheduledWorkout[]
+  orders          Order[]
+  wishlistItems   WishlistItem[]
+  cart            Cart?
+  programEnrollments UserProgramEnrollment[]
+  performanceLogs UserPerformanceLog[]
+  adaptationLogs  AdaptationLog[]
+
+  @@map("users")
+}
+
+model Exercise {
+  id          String   @id @default(uuid())
+  name        String
+  muscleGroup String
+  description String?
+  category    String   @default("unisex") // "men", "women", "unisex"
+  muscleFocus String?  // "glutes", "hips", "thighs", "core", "chest", "back", etc.
+  equipmentType String? // "bands", "dumbbells", "machines", "bodyweight", "barbell"
+  difficulty  String   @default("intermediate") // "beginner", "intermediate", "advanced"
+  caloriesPerMin Float? @default(5.0)
+  imageUrl    String?
+  videoUrl    String?
+  tips        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workoutExercises WorkoutExercise[]
+  performanceLogs  UserPerformanceLog[]
+
+  @@map("exercises")
+}
+
+model WorkoutPlan {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  userId      String
+  category    String   @default("unisex") // "men", "women", "unisex"
+  muscleFocus String?  // "glutes", "full_body", "upper", "lower", etc.
+  workoutType String?  // "strength", "cardio", "hiit", "sculpt", "activation"
+  location    String   @default("gym") // "gym", "home", "outdoor"
+  difficulty  String   @default("intermediate")
+  durationMinutes Int?
+  estimatedCalories Int?
+  imageUrl    String?
+  isPremium   Boolean  @default(false)
+  isPublic    Boolean  @default(false) // Public templates vs user-created
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workoutExercises WorkoutExercise[]
+  workoutSessions  WorkoutSession[]
+  programWorkouts  ProgramWorkout[]
+
+  @@index([userId])
+  @@index([category])
+  @@index([muscleFocus])
+  @@map("workout_plans")
+}
+
+model WorkoutExercise {
+  id            String @id @default(uuid())
+  workoutPlanId String
+  exerciseId    String
+  sets          Int
+  reps          Int
+  restTime      Int    // in seconds
+  order         Int    @default(0)
+
+  workoutPlan WorkoutPlan @relation(fields: [workoutPlanId], references: [id], onDelete: Cascade)
+  exercise    Exercise    @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@index([workoutPlanId])
+  @@index([exerciseId])
+  @@map("workout_exercises")
+}
+
+model WorkoutSession {
+  id            String    @id @default(uuid())
+  userId        String
+  workoutPlanId String
+  startTime     DateTime  @default(now())
+  endTime       DateTime?
+  completed     Boolean   @default(false)
+  notes         String?
+  duration      Int?      // in minutes
+  distance      Float?    // in km (for outdoor workouts)
+  routeData     String?   // JSON string for map routes
+  activityType  String?   // "gym", "running", "cycling", etc.
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workoutPlan   WorkoutPlan    @relation(fields: [workoutPlanId], references: [id], onDelete: Cascade)
+  completedSets CompletedSet[]
+
+  @@index([userId])
+  @@index([workoutPlanId])
+  @@map("workout_sessions")
+}
+
+model CompletedSet {
+  id               String   @id @default(uuid())
+  workoutSessionId String
+  exerciseId       String
+  setNumber        Int
+  reps             Int
+  weight           Float?
+  createdAt        DateTime @default(now())
+
+  workoutSession WorkoutSession @relation(fields: [workoutSessionId], references: [id], onDelete: Cascade)
+
+  @@index([workoutSessionId])
+  @@map("completed_sets")
+}
+
+model ScheduledWorkout {
+  id            String   @id @default(uuid())
+  userId        String
+  workoutPlanId String
+  scheduledDate DateTime
+  completed     Boolean  @default(false)
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([scheduledDate])
+  @@map("scheduled_workouts")
+}
+
+// E-commerce Models
+model Product {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  price       Float
+  category    String   // "tops", "bottoms", "sports_bras", "accessories", "shoes"
+  gender      String   // "women", "men", "unisex"
+  brand       String?
+  images      String[] // Array of image URLs
+  sizes       String[] // ["XS", "S", "M", "L", "XL"]
+  colors      String[] // ["Black", "White", "Pink", "Blue"]
+  stock       Int      @default(0)
+  featured    Boolean  @default(false)
+  rating      Float?   @default(0)
+  reviewCount Int      @default(0)
+  tags        String[] // ["breathable", "compression", "moisture-wicking"]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orderItems    OrderItem[]
+  wishlistItems WishlistItem[]
+  cartItems     CartItem[]
+
+  @@index([category])
+  @@index([gender])
+  @@index([featured])
+  @@map("products")
+}
+
+model Order {
+  id              String   @id @default(uuid())
+  userId          String
+  orderNumber     String   @unique
+  status          String   @default("pending") // "pending", "paid", "processing", "shipped", "delivered", "canceled"
+  subtotal        Float
+  tax             Float    @default(0)
+  shippingCost    Float    @default(0)
+  total           Float
+  paymentIntentId String?  @unique
+  paymentStatus   String   @default("pending") // "pending", "succeeded", "failed"
+  shippingAddress Json     // {name, street, city, state, zip, country}
+  trackingNumber  String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  orderId   String
+  productId String
+  quantity  Int
+  size      String
+  color     String
+  price     Float    // Price at time of order
+  createdAt DateTime @default(now())
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}
+
+model WishlistItem {
+  id        String   @id @default(uuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@map("wishlist_items")
+}
+
+model Cart {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cartItems CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+  cartId    String
+  productId String
+  quantity  Int      @default(1)
+  size      String
+  color     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([cartId])
+  @@index([productId])
+  @@map("cart_items")
+}
+
+// Training Programs System
+model Program {
+  id            String   @id @default(uuid())
+  title         String
+  description   String
+  level         String   // "Beginner", "Intermediate", "Advanced"
+  goal          String   // "Muscle Gain", "Fat Loss", "Strength", "Glutes", "Endurance"
+  durationWeeks Int
+  coverImage    String?
+  isPremium     Boolean  @default(false)
+  category      String   @default("unisex") // "men", "women", "unisex"
+  muscleGroups  String[] // ["Glutes", "Legs", "Back", "Chest"]
+  equipment     String[] // ["Dumbbells", "Bands", "Barbell", "None"]
+  featured      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  weeks       ProgramWeek[]
+  enrollments UserProgramEnrollment[]
+
+  @@index([level])
+  @@index([goal])
+  @@index([category])
+  @@index([featured])
+  @@map("programs")
+}
+
+model ProgramWeek {
+  id         String @id @default(uuid())
+  programId  String
+  weekNumber Int
+  title      String? // "Foundation Week", "Progressive Overload", etc.
+  description String?
+
+  program  Program          @relation(fields: [programId], references: [id], onDelete: Cascade)
+  workouts ProgramWorkout[]
+
+  @@unique([programId, weekNumber])
+  @@index([programId])
+  @@map("program_weeks")
+}
+
+model ProgramWorkout {
+  id          String  @id @default(uuid())
+  weekId      String
+  dayNumber   Int     // 1-7 (Monday-Sunday)
+  workoutId   String
+  isRestDay   Boolean @default(false)
+  notes       String? // "Focus on form", "Increase weight by 5%"
+
+  week    ProgramWeek @relation(fields: [weekId], references: [id], onDelete: Cascade)
+  workout WorkoutPlan @relation(fields: [workoutId], references: [id])
+
+  @@unique([weekId, dayNumber])
+  @@index([weekId])
+  @@index([workoutId])
+  @@map("program_workouts")
+}
+
+model UserProgramEnrollment {
+  id                String   @id @default(uuid())
+  userId            String
+  programId         String
+  startDate         DateTime @default(now())
+  currentWeek       Int      @default(1)
+  completedWorkouts Json     @default("{}") // {weekNumber: {dayNumber: true}}
+  status            String   @default("active") // "active", "completed", "dropped"
+  completedAt       DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  program Program @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, programId])
+  @@index([userId])
+  @@index([programId])
+  @@index([status])
+  @@map("user_program_enrollments")
+}
+
+// AI Adaptive Training System
+model UserPerformanceLog {
+  id             String   @id @default(uuid())
+  userId         String
+  exerciseId     String
+  workoutSessionId String?
+  weightUsed     Float?   // in kg or lbs
+  repsCompleted  Int
+  setsCompleted  Int
+  rpe            Int?     // Rate of Perceived Exertion (1-10)
+  notes          String?
+  completedAt    DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([exerciseId])
+  @@index([completedAt])
+  @@index([workoutSessionId])
+  @@map("user_performance_logs")
+}
+
+model AdaptationLog {
+  id             String   @id @default(uuid())
+  userId         String
+  programId      String?
+  exerciseId     String?
+  adjustmentType String   // "increase", "decrease", "deload", "recovery", "maintain"
+  reason         String
+  previousValue  Json?    // Store previous workout parameters
+  newValue       Json?    // Store new workout parameters
+  createdAt      DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([programId])
+  @@index([createdAt])
+  @@map("adaptation_logs")
+}
+

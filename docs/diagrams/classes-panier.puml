@@ -1,0 +1,38 @@
+@startuml
+!pragma layout smetana
+title Catalogue et panier
+left to right direction
+skinparam shadowing false
+skinparam dpi 180
+skinparam classAttributeIconSize 0
+
+class User {
+  id: String
+  email: String
+}
+class Product {
+  id: String
+  name: String
+  price: Float
+  category: String
+  stock: Int
+}
+class Cart {
+  id: String
+  updatedAt: DateTime
+}
+class CartItem {
+  quantity: Int
+  size: String
+  color: String
+}
+class WishlistItem {
+  createdAt: DateTime
+}
+
+User "1" -- "0..1" Cart
+Cart "1" -- "0..*" CartItem
+Product "1" -- "0..*" CartItem
+User "1" -- "0..*" WishlistItem
+Product "1" -- "0..*" WishlistItem
+@enduml

@@ -1,0 +1,162 @@
+@startuml
+!pragma layout smetana
+title Modèle global des classes déclaré dans Prisma
+top to bottom direction
+hide methods
+skinparam shadowing false
+skinparam dpi 180
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam linetype ortho
+
+package "Utilisateurs et entraînement" {
+  class User {
+    id: String
+    email: String
+    role: String
+    height: Float?
+    weight: Float?
+    fitnessGoal: String?
+    subscriptionPlan: String
+    subscriptionStatus: String
+  }
+  class WorkoutPlan {
+    id: String
+    name: String
+    difficulty: String
+    workoutType: String?
+    durationMinutes: Int?
+  }
+  class Exercise {
+    id: String
+    name: String
+    muscleGroup: String
+    difficulty: String
+    equipmentType: String?
+  }
+  class WorkoutExercise {
+    sets: Int
+    reps: Int
+    restTime: Int
+    order: Int
+  }
+  class WorkoutSession {
+    startTime: DateTime
+    completed: Boolean
+    duration: Int?
+  }
+  class CompletedSet {
+    setNumber: Int
+    reps: Int
+    weight: Float?
+  }
+  class ScheduledWorkout {
+    scheduledDate: DateTime
+    completed: Boolean
+  }
+  class UserPerformanceLog {
+    repsCompleted: Int
+    setsCompleted: Int
+    weightUsed: Float?
+    rpe: Int?
+  }
+  class AdaptationLog {
+    adjustmentType: String
+    reason: String
+  }
+}
+
+package "Programmes" {
+  class Program {
+    title: String
+    level: String
+    goal: String
+    durationWeeks: Int
+  }
+  class ProgramWeek {
+    weekNumber: Int
+    title: String?
+  }
+  class ProgramWorkout {
+    dayNumber: Int
+    isRestDay: Boolean
+  }
+  class UserProgramEnrollment {
+    startDate: DateTime
+    currentWeek: Int
+    status: String
+  }
+}
+
+package "Boutique" {
+  class Product {
+    name: String
+    price: Float
+    stock: Int
+  }
+  class Cart {
+    id: String
+  }
+  class CartItem {
+    quantity: Int
+    size: String
+    color: String
+  }
+  class Order {
+    orderNumber: String
+    status: String
+    total: Float
+    paymentStatus: String
+  }
+  class OrderItem {
+    quantity: Int
+    size: String
+    color: String
+    price: Float
+  }
+  class WishlistItem {
+    id: String
+  }
+}
+
+User "1" -- "0..*" WorkoutPlan : crée
+WorkoutPlan "1" -- "0..*" WorkoutExercise
+Exercise "1" -- "0..*" WorkoutExercise
+User "1" -- "0..*" WorkoutSession
+WorkoutPlan "1" -- "0..*" WorkoutSession
+WorkoutSession "1" -- "0..*" CompletedSet
+User "1" -- "0..*" ScheduledWorkout
+User "1" -- "0..*" UserPerformanceLog
+Exercise "1" -- "0..*" UserPerformanceLog
+Program "1" -- "0..*" ProgramWeek
+ProgramWeek "1" -- "0..*" ProgramWorkout
+WorkoutPlan "1" -- "0..*" ProgramWorkout
+User "1" -- "0..*" UserProgramEnrollment
+Program "1" -- "0..*" UserProgramEnrollment
+User "1" -- "0..*" AdaptationLog
+User "1" -- "0..*" Order
+User "1" -- "0..*" WishlistItem
+Product "1" -- "0..*" WishlistItem
+User "1" -- "0..1" Cart
+Cart "1" -- "0..*" CartItem
+Product "1" -- "0..*" CartItem
+Order "1" -- "0..*" OrderItem
+Product "1" -- "0..*" OrderItem
+
+note bottom of CompletedSet
+  exerciseId existe comme champ,
+  sans relation Prisma déclarée.
+end note
+note bottom of ScheduledWorkout
+  workoutPlanId existe comme champ,
+  sans relation Prisma déclarée.
+end note
+note bottom of UserPerformanceLog
+  workoutSessionId existe comme champ,
+  sans relation Prisma déclarée.
+end note
+note bottom of AdaptationLog
+  programId et exerciseId sont des champs,
+  sans relations Prisma déclarées.
+end note
+@enduml
